@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="INCASSI RBR">
+<meta name="theme-color" content="#1F3864">
+<title>INCASSI GLOBAL RBR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#1F3864; --navy2:#2E5A9C; --gold:#C9A227; --bg:#f4f6fa; --card:#ffffff;
+  --ink:#1a2233; --muted:#6b7280; --line:#e3e8f0; --green:#2e7d32; --red:#c62828;
+  --lblue:#e8f0fb; --lyellow:#fff4d6;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.4}
+header{position:sticky;top:0;z-index:30;background:var(--navy);color:#fff;padding:10px 14px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+header h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.3px}
+header .badge{font-size:11px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.15)}
+header .badge.ok{background:var(--green)}
+nav{position:sticky;top:44px;z-index:29;background:#fff;border-bottom:1px solid var(--line);
+  display:flex;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;border:0;background:none;padding:12px 16px;font-size:13px;font-weight:600;
+  color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.active{color:var(--navy);border-bottom-color:var(--gold)}
+main{padding:14px;max-width:1200px;margin:0 auto}
+.view{display:none}.view.active{display:block}
+h2{font-size:17px;margin:4px 0 12px;color:var(--navy)}
+h3{font-size:14px;margin:18px 0 8px;color:var(--navy);text-transform:uppercase;letter-spacing:.4px}
+.grid{display:grid;gap:10px}
+.kpis{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.kpi .lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.kpi .val{font-size:22px;font-weight:800;margin-top:4px;color:var(--navy)}
+.kpi .val.sm{font-size:17px}
+.kpi.alert .val{color:var(--red)}
+.kpi.good .val{color:var(--green)}
+.filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:14px}
+.filters label{font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:3px}
+select,input,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+  font-size:13px;font-family:inherit;background:#fff;color:var(--ink)}
+select:focus,input:focus,textarea:focus{outline:2px solid var(--navy2);border-color:var(--navy2)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{background:var(--navy);color:#fff;font-weight:600;font-size:12px;position:sticky;top:0}
+tbody tr:hover{background:var(--lblue)}
+tr.sub td{background:var(--lyellow);font-weight:700}
+tr.tot td{background:#eef2f8;font-weight:800}
+.money.neg{color:var(--red)}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.pill.si{background:#e3f4e4;color:var(--green)}.pill.no{background:#fde8e8;color:var(--red)}
+.pill.attivo{background:#e3f4e4;color:var(--green)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:9px;padding:9px 14px;
+  font-size:13px;font-weight:700;cursor:pointer;background:var(--navy);color:#fff}
+.btn.gold{background:var(--gold);color:#3a2f00}.btn.ghost{background:#eef2f8;color:var(--navy)}
+.btn.danger{background:var(--red)}.btn.sm{padding:5px 10px;font-size:12px}
+.row-actions{display:flex;gap:6px;justify-content:flex-end}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar .spacer{flex:1}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;
+  justify-content:center;z-index:50;padding:20px;overflow-y:auto}
+.modal.open{display:flex}
+.modal .box{background:#fff;border-radius:14px;max-width:560px;width:100%;padding:20px;margin:auto}
+.modal h3{margin-top:0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid .full{grid-column:1/-1}
+.form-grid label{font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:3px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.infocard{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.infocard .it{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.infocard .it .k{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.infocard .it .v{font-size:14px;font-weight:600;margin-top:2px}
+.note{font-size:12px;color:var(--muted);margin:6px 0 14px}
+.hint{font-size:12px;color:var(--muted)}
+.chart-box{position:relative;height:260px}
+.tag{font-size:11px;color:var(--muted)}
+.search{max-width:280px}
+@media(max-width:640px){
+  .form-grid{grid-template-columns:1fr}
+  header h1{font-size:13px}
+  main{padding:10px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>INCASSI&nbsp;GLOBAL&nbsp;RBR</h1>
+  <span id="syncBadge" class="badge">Solo questo dispositivo</span>
+</header>
+<nav id="nav"></nav>
+<main>
+  <section id="view-dashboard" class="view active"></section>
+  <section id="view-clienti" class="view"></section>
+  <section id="view-movimenti" class="view"></section>
+  <section id="view-erogato" class="view"></section>
+  <section id="view-scheda" class="view"></section>
+  <section id="view-impostazioni" class="view"></section>
+</main>
+<div id="modal" class="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+/* ============================ DATI ============================ */
+const SEED = {"clienti": [], "movimenti": [], "erogato": [], "liste": {"venditori": ["Lorenzo Rizzo", "Luciano Purpi", "Roberto Falcon"], "consulenti": ["Alessio Vettori", "Andrea Chirivi", "Da assegnare", "Gianni Mazzotta", "Leo Franco", "Marco Cuccaro", "Roberto Falcon"], "dts": ["Da assegnare", "Leo Franco", "Marco Cuccaro", "Roberto Falcon"], "percorsi": ["Academy virtuale", "Consulenza 12 mesi (40%)", "Consulenza 12 mesi (50%)", "Consulenza 24 mesi (50%)", "Consulenza 3K + 10%", "Consulenza 3K fisso", "Da definire", "Mastermind", "Mastermind 24 mesi", "Videolezioni Mastermind"], "stati": ["Attivo", "Concluso", "Da definire", "Fermato", "Non attivo", "Non partito"], "tipi": ["Venduto", "Fatturato", "Incassato", "Rimborso"], "riferimenti": ["Nuovo incasso (front end)", "Incasso ricorrente (back end)"], "statiPagamento": ["Pagata", "Parziale", "Non pagata", "Proforma"], "iva": 0.22}};
+const LS_KEY = 'rbr_incassi_v1';
+const GH_KEY = 'rbr_gh_cfg_v1';
+
+let state = load();
+function load(){
+  try{const s=localStorage.getItem(LS_KEY);if(s)return JSON.parse(s);}catch(e){}
+  return JSON.parse(JSON.stringify(SEED));
+}
+function save(){localStorage.setItem(LS_KEY,JSON.stringify(state));}
+function resetToSeed(){if(confirm('Ripristinare i dati iniziali migrati dal file Excel? Sostituisce i dati attuali.')){state=JSON.parse(JSON.stringify(SEED));save();renderAll();}}
+
+/* ============================ UTIL ============================ */
+const IVA = ()=> (state.liste.iva ?? 0.22);
+const fmtE0 = new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const fmtE2 = new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN = new Intl.NumberFormat('it-IT',{maximumFractionDigits:0});
+const pct = v=> (v==null||!isFinite(v))?'–':(v*100).toFixed(1).replace('.',',')+'%';
+function money(v,dec){if(v==null||v===''||!isFinite(v))return '–';const f=dec?fmtE2:fmtE0;const s=f.format(v);return v<0?`<span class="money neg">${s}</span>`:s;}
+const MONTHS=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function mkey(d){return d?String(d).slice(0,7):'';}            // 'YYYY-MM'
+function mlabel(k){const[y,m]=k.split('-');return MONTHS[+m-1]+' '+y;}
+function today(){return new Date();}
+function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+const isBack = p=> /Consulenza/i.test(p||'');
+
+/* ============================ CALCOLI ============================ */
+function cById(id){return state.clienti.find(c=>c.id===id);}
+function quotaOf(id){const c=cById(id);return c&&c.quota!=null?c.quota:0.5;}
+
+function sumMov(pred){return state.movimenti.filter(pred).reduce((s,m)=>s+(+m.importo||0),0);}
+function vendutoCli(id){return sumMov(m=>m.clienteId===id&&m.tipo==='Venduto');}
+function fatturatoCli(id){return sumMov(m=>m.clienteId===id&&m.tipo==='Fatturato');}
+function incassatoCli(id){return sumMov(m=>m.clienteId===id&&m.tipo==='Incassato')-sumMov(m=>m.clienteId===id&&m.tipo==='Rimborso');}
+function erogatoCli(id){return state.erogato.filter(e=>e.clienteId===id).reduce((s,e)=>s+(+e.erogato||0),0);}
+function residuoCli(id){return fatturatoCli(id)-incassatoCli(id);}
+function incassatoLast(id,days){const lim=new Date();lim.setDate(lim.getDate()-days);
+  const f=m=>m.clienteId===id&&new Date(m.data)>=lim;
+  return sumMov(m=>f(m)&&m.tipo==='Incassato')-sumMov(m=>f(m)&&m.tipo==='Rimborso');}
+function staPagando(id){return incassatoLast(id,60)>0;}
+function primoIncasso(id){const ds=state.movimenti.filter(m=>m.clienteId===id&&m.tipo==='Incassato'&&(+m.importo)>0).map(m=>m.data).sort();return ds[0]||null;}
+function giorniFirmaIncasso(id){const c=cById(id);const p=primoIncasso(id);if(!c||!c.dataFirma||!p)return null;return daysBetween(c.dataFirma,p);}
+function dataAcq(c){return c.dataFirma||c.dataInizio||null;}
+
+/* erogato di una riga (se ci sono i MOLD ricalcola, altrimenti usa il valore salvato) */
+/* erogato mostrato/sommato = valore salvato (storia congelata). Il ricalcolo dai MOLD
+   avviene solo al salvataggio di una riga (nuova o modificata). */
+function erogatoRiga(e){return +e.erogato||0;}
+function erogatoDaMold(cli,mp,mm){
+  if(mp==null||mm==null||mp===''||mm==='')return null;
+  const inc=(+mm)-(+mp);return inc>0? inc*quotaOf(cli)*(1+IVA()) : 0;
+}
+
+/* filtro dashboard: un cliente passa? */
+function clientePassa(c,f){
+  return (!f.vend||c.venditore===f.vend)&&(!f.cons||c.consulente===f.cons)&&
+         (!f.dt||c.direttoreTecnico===f.dt)&&(!f.perc||c.percorsoAttuale===f.perc)&&
+         (!f.stato||c.stato===f.stato);
+}
+function clientiFiltrati(f){return state.clienti.filter(c=>clientePassa(c,f));}
+/* movimento passa? (consulente dal cliente, come nel file) */
+function movPassa(m,f){const c=cById(m.clienteId);if(!c)return false;
+  return (!f.vend||c.venditore===f.vend)&&(!f.cons||c.consulente===f.cons)&&
+         (!f.dt||c.direttoreTecnico===f.dt)&&(!f.perc||c.percorsoAttuale===f.perc)&&(!f.stato||c.stato===f.stato);}
+/* riga erogato passa? (consulente dalla RIGA, per storicizzare i passaggi) */
+function eroPassa(e,f){const c=cById(e.clienteId);if(!c)return false;
+  return (!f.vend||c.venditore===f.vend)&&(!f.cons||e.consulente===f.cons)&&
+         (!f.dt||c.direttoreTecnico===f.dt)&&(!f.perc||c.percorsoAttuale===f.perc)&&(!f.stato||c.stato===f.stato);}
+
+/* somme mensili back end */
+function eroMese(k,f){return state.erogato.filter(e=>mkey(e.mese)===k&&eroPassa(e,f)).reduce((s,e)=>s+erogatoRiga(e),0);}
+function fatRicMese(k,f){return sumMov(m=>mkey(m.data)===k&&m.tipo==='Fatturato'&&/^Incasso ricorrente/.test(m.riferimento)&&movPassa(m,f));}
+function incRicMese(k,f){return sumMov(m=>mkey(m.data)===k&&m.tipo==='Incassato'&&/^Incasso ricorrente/.test(m.riferimento)&&movPassa(m,f))
+                              -sumMov(m=>mkey(m.data)===k&&m.tipo==='Rimborso'&&/^Incasso ricorrente/.test(m.riferimento)&&movPassa(m,f));}
+function vendutoMese(k,f){return sumMov(m=>mkey(m.data)===k&&m.tipo==='Venduto'&&movPassa(m,f));}
+function fatTotMese(k,f){return sumMov(m=>mkey(m.data)===k&&m.tipo==='Fatturato'&&movPassa(m,f));}
+function incTotMese(k,f){return sumMov(m=>mkey(m.data)===k&&m.tipo==='Incassato'&&movPassa(m,f))
+                              -sumMov(m=>mkey(m.data)===k&&m.tipo==='Rimborso'&&movPassa(m,f));}
+function nuoviMese(k,f){return clientiFiltrati(f).filter(c=>mkey(dataAcq(c))===k).length;}
+
+/* stato filtri dashboard */
+let F={vend:'',cons:'',dt:'',perc:'',stato:''};
+let dashYear=2026, controlMonth=mkey(new Date().toISOString());
+let schedaClienteId = (state.clienti[0]||{}).id || '';
+
+/* ============================ UI BASE ============================ */
+const TABS=[['dashboard','Dashboard'],['clienti','Clienti'],['movimenti','Movimenti'],
+  ['erogato','Erogato'],['scheda','Scheda cliente'],['impostazioni','Impostazioni']];
+function buildNav(){
+  document.getElementById('nav').innerHTML=TABS.map(([id,l])=>
+    `<button data-tab="${id}" onclick="go('${id}')">${l}</button>`).join('');
+}
+function go(tab){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  render(tab);window.scrollTo(0,0);
+}
+function renderAll(){TABS.forEach(([id])=>render(id));updateSyncBadge();}
+function render(tab){({dashboard:renderDashboard,clienti:renderClienti,movimenti:renderMovimenti,
+  erogato:renderErogato,scheda:renderScheda,impostazioni:renderImpostazioni}[tab]||(()=>{}))();}
+
+function opts(list,sel,blank){return (blank?`<option value="">${blank}</option>`:'')+
+  (list||[]).map(o=>`<option ${o===sel?'selected':''}>${esc(o)}</option>`).join('');}
+function clientOpts(sel){return state.clienti.map(c=>`<option value="${esc(c.id)}" ${c.id===sel?'selected':''}>${esc(c.id)}</option>`).join('');}
+
+/* modal */
+function openModal(html){document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+/* ============================ DASHBOARD ============================ */
+function renderDashboard(){
+  const L=state.liste, el=document.getElementById('view-dashboard');
+  const months=[...Array(12)].map((_,i)=>dashYear+'-'+String(i+1).padStart(2,'0'));
+  const allMonths=[]; for(const y of [2025,2026,2027])for(let m=1;m<=12;m++)allMonths.push(y+'-'+String(m).padStart(2,'0'));
+  const ero=k=>eroMese(k,F), fat=k=>fatRicMese(k,F), inc=k=>incRicMese(k,F);
+  const prog=k=>{let s=0;for(const mm of allMonths){if(mm>k)break;s+=ero(mm)-inc(mm);}return s;};
+  const cf=clientiFiltrati(F);
+  const backAtt=cf.filter(c=>c.stato==='Attivo'&&isBack(c.percorsoAttuale));
+  const paganti=backAtt.filter(c=>staPagando(c.id));
+  const giorni=cf.filter(c=>isBack(c.percorsoAttuale)&&giorniFirmaIncasso(c.id)!=null).map(c=>giorniFirmaIncasso(c.id));
+  const giorniMed=giorni.length?Math.round(giorni.reduce((a,b)=>a+b,0)/giorni.length):null;
+  const incTot=cf.reduce((s,c)=>s+incassatoCli(c.id),0);
+  const daIncassare=cf.reduce((s,c)=>s+residuoCli(c.id),0);
+
+  const kpi=(lbl,val,cls='')=>`<div class="card kpi ${cls}"><div class="lbl">${lbl}</div><div class="val ${String(val).length>9?'sm':''}">${val}</div></div>`;
+
+  let html=`<h2>Dashboard</h2>
+  <div class="filters">
+    ${filterSel('Venditore','vend',L.venditori)}
+    ${filterSel('Consulente','cons',L.consulenti)}
+    ${filterSel('Direttore Tecnico','dt',L.dts)}
+    ${filterSel('Percorso','perc',L.percorsi)}
+    ${filterSel('Stato','stato',L.stati)}
+  </div>
+  <div class="grid kpis">
+    ${kpi('Clienti (filtro)',fmtN.format(cf.length))}
+    ${kpi('Attivi',fmtN.format(cf.filter(c=>c.stato==='Attivo').length),'good')}
+    ${kpi('Back end attivi',fmtN.format(backAtt.length))}
+    ${kpi('Di cui paganti (60gg)',fmtN.format(paganti.length),'good')}
+    ${kpi('% paganti',pct(backAtt.length?paganti.length/backAtt.length:null))}
+    ${kpi('Non paganti',fmtN.format(backAtt.length-paganti.length),(backAtt.length-paganti.length)?'alert':'')}
+    ${kpi('Giorni medi firma→1° inc.',giorniMed==null?'n/d':giorniMed,giorniMed!=null&&giorniMed<90?'good':(giorniMed!=null?'alert':''))}
+    ${kpi('Totale da incassare',money(daIncassare))}
+    ${kpi('LTV medio',money(cf.length?incTot/cf.length:0))}
+  </div>
+
+  <h3>Andamento mensile back end — 
+    <select onchange="dashYear=+this.value;renderDashboard()" style="width:auto;display:inline-block">
+      ${[2025,2026,2027].map(y=>`<option ${y===dashYear?'selected':''}>${y}</option>`).join('')}
+    </select></h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Voce</th>${months.map(k=>`<th>${MONTHS[+k.slice(5)-1]}</th>`).join('')}<th>TOT ${dashYear}</th></tr></thead><tbody>`;
+  const rowM=(lbl,fn,fmt,cls='')=>{let tot=0;let cells=months.map(k=>{const v=fn(k);tot+=v;return `<td>${fmt(v)}</td>`;}).join('');
+    return `<tr class="${cls}"><td>${lbl}</td>${cells}<td>${fmt(tot)}</td></tr>`;};
+  html+=rowM('EROGATO',ero,v=>money(v));
+  html+=rowM('FATTURATO (profit share)',fat,v=>money(v));
+  html+=rowM('INCASSATO (profit share)',inc,v=>money(v));
+  html+=rowM('Saldo scaduto (ero−inc)',k=>ero(k)-inc(k),v=>money(v));
+  {let cells=months.map(k=>`<td>${money(prog(k))}</td>`).join('');
+   html+=`<tr class="tot"><td>Saldo progressivo</td>${cells}<td>${money(prog(months[11]))}</td></tr>`;}
+  const pctRow=(lbl,fn)=>`<tr><td>${lbl}</td>${months.map(k=>`<td>${pct(fn(k))}</td>`).join('')}<td>—</td></tr>`;
+  html+=pctRow('% fatturato / erogato',k=>ero(k)?fat(k)/ero(k):null);
+  html+=pctRow('% incassato / fatturato',k=>fat(k)?inc(k)/fat(k):null);
+  html+=`</tbody></table></div>
+  <div class="card" style="margin-top:12px"><div class="chart-box"><canvas id="chMonth"></canvas></div></div>`;
+
+  // acquisizione + totali
+  html+=`<h3>Acquisizione e totali</h3><div class="tbl-wrap"><table><thead><tr><th>Voce</th>${months.map(k=>`<th>${MONTHS[+k.slice(5)-1]}</th>`).join('')}<th>TOT ${dashYear}</th></tr></thead><tbody>`;
+  html+=rowM('Nuovi clienti',k=>nuoviMese(k,F),v=>fmtN.format(v));
+  html+=rowM('Venduto (contratti)',k=>vendutoMese(k,F),v=>money(v));
+  html+=rowM('Fatturato TOTALE',k=>fatTotMese(k,F),v=>money(v));
+  html+=rowM('Incassato TOTALE',k=>incTotMese(k,F),v=>money(v));
+  html+=`</tbody></table></div>`;
+
+  // conversione
+  const entrati=cf.filter(c=>c.percorsoIniziale&&!isBack(c.percorsoIniziale));
+  const conv=entrati.filter(c=>isBack(c.percorsoAttuale));
+  html+=`<h3>Conversione front → back end</h3><div class="grid kpis">
+    ${kpi('Entrati dal front end',fmtN.format(entrati.length))}
+    ${kpi('Passati al back end',fmtN.format(conv.length))}
+    ${kpi('% conversione',pct(entrati.length?conv.length/entrati.length:null))}
+  </div><p class="note">Il "percorso iniziale" (in Clienti) indica da dove è partito ogni cliente. Impostalo dove serve per far funzionare il funnel.</p>`;
+
+  // controllo compilazione scheda
+  html+=`<h3>Controllo compilazione scheda</h3>
+  <div class="toolbar"><span class="hint">Mese da controllare:</span>
+    <input type="month" value="${controlMonth}" style="width:auto" onchange="controlMonth=this.value;renderDashboard()"></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Consulente</th><th>Back end attivi</th><th>Schede nel mese</th><th>Mancanti</th></tr></thead><tbody>`;
+  let tA=0,tC=0;
+  (state.liste.consulenti||[]).forEach(cons=>{
+    const att=state.clienti.filter(c=>c.consulente===cons&&c.stato==='Attivo'&&isBack(c.percorsoAttuale)).length;
+    const comp=state.erogato.filter(e=>e.consulente===cons&&mkey(e.mese)===controlMonth).length;
+    tA+=att;tC+=comp;const man=att-comp;
+    html+=`<tr><td>${esc(cons)}</td><td>${att}</td><td>${comp}</td><td>${man>0?`<span class="pill no">${man}</span>`:man}</td></tr>`;
+  });
+  html+=`<tr class="tot"><td>TOTALE</td><td>${tA}</td><td>${tC}</td><td>${tA-tC}</td></tr></tbody></table></div>`;
+
+  // LTV per offerta
+  html+=`<h3>LTV per offerta</h3><div class="tbl-wrap"><table><thead><tr><th>Percorso</th><th>N.</th><th>Venduto</th><th>Erogato</th><th>Fatturato</th><th>Incassato (LTV)</th><th>LTV medio</th></tr></thead><tbody>`;
+  let T={n:0,v:0,e:0,f:0,i:0};
+  (state.liste.percorsi||[]).forEach(p=>{
+    const cs=cf.filter(c=>c.percorsoAttuale===p);if(!cs.length)return;
+    const v=cs.reduce((s,c)=>s+vendutoCli(c.id),0),e=cs.reduce((s,c)=>s+erogatoCli(c.id),0),
+      f=cs.reduce((s,c)=>s+fatturatoCli(c.id),0),i=cs.reduce((s,c)=>s+incassatoCli(c.id),0);
+    T.n+=cs.length;T.v+=v;T.e+=e;T.f+=f;T.i+=i;
+    html+=`<tr><td>${esc(p)}</td><td>${cs.length}</td><td>${money(v)}</td><td>${money(e)}</td><td>${money(f)}</td><td>${money(i)}</td><td>${money(cs.length?i/cs.length:0)}</td></tr>`;
+  });
+  html+=`<tr class="tot"><td>TOTALE</td><td>${T.n}</td><td>${money(T.v)}</td><td>${money(T.e)}</td><td>${money(T.f)}</td><td>${money(T.i)}</td><td>${money(T.n?T.i/T.n:0)}</td></tr></tbody></table></div>`;
+
+  el.innerHTML=html;
+  drawMonthChart(months);
+}
+function filterSel(lbl,key,list){return `<div><label>${lbl}</label>
+  <select onchange="F.${key}=this.value;renderDashboard()">${opts(list,F[key],'Tutti')}</select></div>`;}
+let chMonth=null;
+function drawMonthChart(months){
+  if(typeof Chart==='undefined')return;const cv=document.getElementById('chMonth');if(!cv)return;
+  if(chMonth)chMonth.destroy();
+  chMonth=new Chart(cv,{type:'bar',data:{labels:months.map(k=>MONTHS[+k.slice(5)-1]),
+    datasets:[
+      {label:'Erogato',data:months.map(k=>eroMese(k,F)),backgroundColor:'#2E5A9C'},
+      {label:'Incassato (profit share)',data:months.map(k=>incRicMese(k,F)),backgroundColor:'#C9A227'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},
+      scales:{y:{ticks:{callback:v=>fmtN.format(v)+' €'}}}}});
+}
+
+/* ============================ CLIENTI ============================ */
+let cliSearch='';
+function renderClienti(){
+  const el=document.getElementById('view-clienti');
+  const q=cliSearch.toLowerCase();
+  const rows=state.clienti.filter(c=>!q||[c.id,c.referente,c.ristorante,c.venditore,c.consulente].join(' ').toLowerCase().includes(q));
+  let html=`<h2>Clienti</h2>
+  <div class="toolbar">
+    <input class="search" placeholder="Cerca…" value="${esc(cliSearch)}" oninput="cliSearch=this.value;renderClienti()">
+    <div class="spacer"></div>
+    <button class="btn gold" onclick="editCliente()">+ Nuovo cliente</button>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr>
+   <th>ID / Azienda</th><th>Percorso</th><th>Stato</th><th>Consulente</th>
+   <th>Venduto</th><th>Erogato</th><th>Fatturato</th><th>Incassato</th><th>Da incassare</th><th>Paga(60g)</th><th></th>
+  </tr></thead><tbody>`;
+  rows.forEach(c=>{
+    html+=`<tr>
+      <td><b>${esc(c.id)}</b><div class="tag">${esc(c.referente||'')}</div></td>
+      <td>${esc(c.percorsoAttuale||'')}</td>
+      <td><span class="pill ${c.stato==='Attivo'?'attivo':''}">${esc(c.stato||'')}</span></td>
+      <td>${esc(c.consulente||'')}</td>
+      <td>${money(vendutoCli(c.id))}</td><td>${money(erogatoCli(c.id))}</td>
+      <td>${money(fatturatoCli(c.id))}</td><td>${money(incassatoCli(c.id))}</td>
+      <td>${money(residuoCli(c.id))}</td>
+      <td><span class="pill ${staPagando(c.id)?'si':'no'}">${staPagando(c.id)?'Sì':'No'}</span></td>
+      <td><div class="row-actions">
+        <button class="btn ghost sm" onclick="editCliente('${esc(c.id)}')">✎</button>
+        <button class="btn danger sm" onclick="delCliente('${esc(c.id)}')">🗑</button></div></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div><p class="note">${rows.length} clienti mostrati.</p>`;
+  el.innerHTML=html;
+}
+function editCliente(id){
+  const c=id?cById(id):{quota:0.5};const L=state.liste;const isNew=!id;
+  openModal(`<h3>${isNew?'Nuovo cliente':'Modifica: '+esc(c.id)}</h3>
+  <div class="form-grid">
+    <div class="full"><label>ID / Azienda (chiave univoca)</label><input id="f_id" value="${esc(c.id||'')}" ${isNew?'':'readonly'}></div>
+    <div><label>Referente</label><input id="f_ref" value="${esc(c.referente||'')}"></div>
+    <div><label>Ristorante</label><input id="f_rist" value="${esc(c.ristorante||'')}"></div>
+    <div class="full"><label>Ragione sociale</label><input id="f_rs" value="${esc(c.ragioneSociale||'')}"></div>
+    <div><label>Percorso attuale</label><select id="f_pa">${opts(L.percorsi,c.percorsoAttuale,'—')}</select></div>
+    <div><label>Percorso iniziale</label><select id="f_pi">${opts(L.percorsi,c.percorsoIniziale,'—')}</select></div>
+    <div><label>Stato</label><select id="f_st">${opts(L.stati,c.stato,'—')}</select></div>
+    <div><label>Quota profit share (%)</label><input id="f_q" type="number" step="1" value="${c.quota!=null?Math.round(c.quota*100):50}"></div>
+    <div><label>Venditore</label><select id="f_v">${opts(L.venditori,c.venditore,'—')}</select></div>
+    <div><label>Consulente</label><select id="f_c">${opts(L.consulenti,c.consulente,'—')}</select></div>
+    <div><label>Direttore Tecnico</label><select id="f_dt">${opts(L.dts,c.direttoreTecnico,'—')}</select></div>
+    <div><label>Metodo pagamento</label><input id="f_met" value="${esc(c.metodo||'')}"></div>
+    <div><label>Data firma</label><input id="f_df" type="date" value="${esc(c.dataFirma||'')}"></div>
+    <div><label>Data inizio</label><input id="f_di" type="date" value="${esc(c.dataInizio||'')}"></div>
+    <div class="full"><label>Note / accordi</label><textarea id="f_note" rows="2">${esc(c.note||'')}</textarea></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn ghost" onclick="closeModal()">Annulla</button>
+    <button class="btn gold" onclick="saveCliente(${isNew})">Salva</button>
+  </div>`);
+}
+function saveCliente(isNew){
+  const g=id=>document.getElementById(id).value.trim();
+  const id=g('f_id');if(!id){alert('Serve un ID / Azienda.');return;}
+  if(isNew&&cById(id)){alert('Esiste già un cliente con questo ID.');return;}
+  const obj={id,referente:g('f_ref'),ristorante:g('f_rist'),ragioneSociale:g('f_rs'),
+    percorsoAttuale:g('f_pa'),percorsoIniziale:g('f_pi'),stato:g('f_st'),
+    quota:(+g('f_q')||0)/100,venditore:g('f_v'),consulente:g('f_c'),direttoreTecnico:g('f_dt'),
+    metodo:g('f_met'),dataFirma:g('f_df'),dataInizio:g('f_di'),note:g('f_note')};
+  if(isNew)state.clienti.push(obj);else Object.assign(cById(id),obj);
+  save();closeModal();renderAll();
+}
+function delCliente(id){if(!confirm('Eliminare '+id+'? (i suoi movimenti restano)'))return;
+  state.clienti=state.clienti.filter(c=>c.id!==id);save();renderAll();}
+
+/* ============================ MOVIMENTI ============================ */
+let movFilter={cli:'',tipo:''};
+function renderMovimenti(){
+  const el=document.getElementById('view-movimenti');
+  let rows=state.movimenti.map((m,i)=>({m,i}))
+    .filter(({m})=>(!movFilter.cli||m.clienteId===movFilter.cli)&&(!movFilter.tipo||m.tipo===movFilter.tipo))
+    .sort((a,b)=>String(b.m.data).localeCompare(String(a.m.data)));
+  let html=`<h2>Movimenti</h2>
+  <div class="toolbar">
+    <select style="width:auto" onchange="movFilter.cli=this.value;renderMovimenti()"><option value="">Tutti i clienti</option>${clientOpts(movFilter.cli)}</select>
+    <select style="width:auto" onchange="movFilter.tipo=this.value;renderMovimenti()">${opts(state.liste.tipi,movFilter.tipo,'Tutti i tipi')}</select>
+    <div class="spacer"></div>
+    <button class="btn gold" onclick="editMov()">+ Nuovo movimento</button>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>Mese</th><th>Cliente</th><th>Tipo</th><th>Importo</th><th>Riferimento</th><th>Stato pag.</th><th>Rif. fattura</th><th></th></tr></thead><tbody>`;
+  rows.forEach(({m,i})=>{
+    html+=`<tr><td>${esc(mlabel(mkey(m.data)))}</td><td>${esc(m.clienteId)}</td>
+      <td>${esc(m.tipo)}</td><td>${money(m.importo,true)}</td><td>${esc(m.riferimento||'')}</td>
+      <td>${esc(m.statoPagamento||'')}</td><td>${esc(m.rifFattura||'')}</td>
+      <td><div class="row-actions"><button class="btn ghost sm" onclick="editMov(${i})">✎</button>
+      <button class="btn danger sm" onclick="delMov(${i})">🗑</button></div></td></tr>`;
+  });
+  html+=`</tbody></table></div><p class="note">${rows.length} movimenti.</p>`;
+  el.innerHTML=html;
+}
+function editMov(i){
+  const m=(i!=null)?state.movimenti[i]:{data:new Date().toISOString().slice(0,7)+'-01',tipo:'Incassato',riferimento:'Incasso ricorrente (back end)'};
+  const L=state.liste;const isNew=i==null;
+  openModal(`<h3>${isNew?'Nuovo movimento':'Modifica movimento'}</h3>
+  <div class="form-grid">
+    <div><label>Mese</label><input id="m_data" type="month" value="${esc(mkey(m.data))}"></div>
+    <div><label>Cliente</label><select id="m_cli"><option value="">—</option>${clientOpts(m.clienteId)}</select></div>
+    <div><label>Tipo</label><select id="m_tipo">${opts(L.tipi,m.tipo)}</select></div>
+    <div><label>Importo (€ IVA incl.)</label><input id="m_imp" type="number" step="0.01" value="${m.importo!=null?m.importo:''}"></div>
+    <div><label>Riferimento</label><select id="m_rif">${opts(L.riferimenti,m.riferimento,'—')}</select></div>
+    <div><label>Stato pagamento (fatture)</label><select id="m_sp">${opts(L.statiPagamento,m.statoPagamento,'—')}</select></div>
+    <div><label>Rif. fattura (per legare gli incassi)</label><input id="m_rf" value="${esc(m.rifFattura||'')}"></div>
+    <div class="full"><label>Note</label><input id="m_note" value="${esc(m.note||'')}"></div>
+  </div>
+  <p class="hint">Rimborso: metti Tipo = "Rimborso" e importo positivo; verrà sottratto dall'incassato del cliente.</p>
+  <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annulla</button>
+    <button class="btn gold" onclick="saveMov(${isNew?-1:i})">Salva</button></div>`);
+}
+function saveMov(i){
+  const g=id=>document.getElementById(id).value;
+  const cli=g('m_cli');if(!cli){alert('Scegli un cliente.');return;}
+  const obj={data:(g('m_data')||'').slice(0,7)+'-01',clienteId:cli,tipo:g('m_tipo'),
+    importo:+g('m_imp')||0,riferimento:g('m_rif'),statoPagamento:g('m_sp'),rifFattura:g('m_rf').trim(),note:g('m_note').trim()};
+  if(i<0)state.movimenti.push(obj);else state.movimenti[i]=obj;
+  save();closeModal();renderAll();
+}
+function delMov(i){if(!confirm('Eliminare il movimento?'))return;state.movimenti.splice(i,1);save();renderAll();}
+
+/* ============================ EROGATO / SCHEDA CONSULENTI ============================ */
+let eroFilter={cli:'',cons:''};
+function renderErogato(){
+  const el=document.getElementById('view-erogato');
+  let rows=state.erogato.map((e,i)=>({e,i}))
+    .filter(({e})=>(!eroFilter.cli||e.clienteId===eroFilter.cli)&&(!eroFilter.cons||e.consulente===eroFilter.cons))
+    .sort((a,b)=>String(b.e.mese).localeCompare(String(a.e.mese)));
+  let html=`<h2>Erogato (scheda consulenti)</h2>
+  <p class="note">Ogni consulente inserisce MOLD stesso mese anno prima e MOLD del mese; l'erogato = incremento × quota × (1+IVA ${Math.round(IVA()*100)}%). Per le righe storiche l'erogato è già valorizzato.</p>
+  <div class="toolbar">
+    <select style="width:auto" onchange="eroFilter.cli=this.value;renderErogato()"><option value="">Tutti i clienti</option>${clientOpts(eroFilter.cli)}</select>
+    <select style="width:auto" onchange="eroFilter.cons=this.value;renderErogato()">${opts(state.liste.consulenti,eroFilter.cons,'Tutti i consulenti')}</select>
+    <div class="spacer"></div>
+    <button class="btn gold" onclick="editEro()">+ Nuova riga</button>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>Mese</th><th>Cliente</th><th>Consulente</th><th>MOLD prec.</th><th>MOLD mese</th><th>Incremento</th><th>Erogato</th><th></th></tr></thead><tbody>`;
+  rows.forEach(({e,i})=>{
+    const incr=(e.moldPrec!=null&&e.moldMese!=null&&e.moldPrec!==''&&e.moldMese!=='')?(+e.moldMese-+e.moldPrec):null;
+    html+=`<tr><td>${esc(mlabel(mkey(e.mese)))}</td><td>${esc(e.clienteId)}</td><td>${esc(e.consulente||'')}</td>
+      <td>${e.moldPrec!=null&&e.moldPrec!==''?money(e.moldPrec,true):'–'}</td>
+      <td>${e.moldMese!=null&&e.moldMese!==''?money(e.moldMese,true):'–'}</td>
+      <td>${incr!=null?money(incr,true):'–'}</td>
+      <td><b>${money(erogatoRiga(e),true)}</b></td>
+      <td><div class="row-actions"><button class="btn ghost sm" onclick="editEro(${i})">✎</button>
+      <button class="btn danger sm" onclick="delEro(${i})">🗑</button></div></td></tr>`;
+  });
+  html+=`</tbody></table></div><p class="note">${rows.length} righe.</p>`;
+  el.innerHTML=html;
+}
+function editEro(i){
+  const e=(i!=null)?state.erogato[i]:{mese:new Date().toISOString().slice(0,7)+'-01'};
+  const L=state.liste;const isNew=i==null;
+  openModal(`<h3>${isNew?'Nuova riga erogato':'Modifica erogato'}</h3>
+  <div class="form-grid">
+    <div><label>Mese</label><input id="e_mese" type="month" value="${esc(mkey(e.mese))}"></div>
+    <div><label>Cliente</label><select id="e_cli"><option value="">—</option>${clientOpts(e.clienteId)}</select></div>
+    <div><label>Consulente (chi compila)</label><select id="e_cons">${opts(L.consulenti,e.consulente,'—')}</select></div>
+    <div></div>
+    <div><label>MOLD stesso mese anno prec.</label><input id="e_mp" type="number" step="0.01" value="${e.moldPrec!=null?e.moldPrec:''}"></div>
+    <div><label>MOLD del mese</label><input id="e_mm" type="number" step="0.01" value="${e.moldMese!=null?e.moldMese:''}"></div>
+    <div class="full"><label>Erogato manuale (usato solo se non metti i MOLD)</label><input id="e_man" type="number" step="0.01" value="${(e.moldPrec==null||e.moldPrec==='')&&e.erogato?e.erogato:''}"></div>
+    <div class="full"><label>Note</label><input id="e_note" value="${esc(e.note||'')}"></div>
+  </div>
+  <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annulla</button>
+    <button class="btn gold" onclick="saveEro(${isNew?-1:i})">Salva</button></div>`);
+}
+function saveEro(i){
+  const g=id=>document.getElementById(id).value;
+  const cli=g('e_cli');if(!cli){alert('Scegli un cliente.');return;}
+  const mp=g('e_mp'),mm=g('e_mm'),man=g('e_man');
+  const obj={mese:(g('e_mese')||'').slice(0,7)+'-01',clienteId:cli,consulente:g('e_cons'),
+    moldPrec:mp===''?null:+mp,moldMese:mm===''?null:+mm,note:g('e_note').trim()};
+  const fromMold=erogatoDaMold(cli,obj.moldPrec,obj.moldMese);
+  obj.erogato=(fromMold!=null)?fromMold:(+man||0);
+  if(i<0)state.erogato.push(obj);else state.erogato[i]=obj;
+  save();closeModal();renderAll();
+}
+function delEro(i){if(!confirm('Eliminare la riga?'))return;state.erogato.splice(i,1);save();renderAll();}
+
+/* ============================ SCHEDA CLIENTE ============================ */
+function renderScheda(){
+  const el=document.getElementById('view-scheda');
+  if(!cById(schedaClienteId)&&state.clienti[0])schedaClienteId=state.clienti[0].id;
+  const c=cById(schedaClienteId);
+  let html=`<h2>Scheda cliente</h2>
+  <div class="toolbar"><label class="hint">Cliente:&nbsp;</label>
+    <select style="width:auto;min-width:220px" onchange="schedaClienteId=this.value;renderScheda()">${clientOpts(schedaClienteId)}</select></div>`;
+  if(!c){el.innerHTML=html+'<p class="note">Nessun cliente.</p>';return;}
+  const it=(k,v)=>`<div class="it"><div class="k">${k}</div><div class="v">${v||'–'}</div></div>`;
+  html+=`<div class="infocard">
+    ${it('Referente',esc(c.referente))}${it('Ristorante',esc(c.ristorante))}
+    ${it('Percorso attuale',esc(c.percorsoAttuale))}${it('Percorso iniziale',esc(c.percorsoIniziale))}
+    ${it('Stato',esc(c.stato))}${it('Venditore',esc(c.venditore))}
+    ${it('Consulente',esc(c.consulente))}${it('Direttore Tecnico',esc(c.direttoreTecnico))}
+    ${it('Data firma',esc(c.dataFirma))}${it('Data inizio',esc(c.dataInizio))}
+    ${it('Quota',Math.round((c.quota||0)*100)+'%')}${it('Sta pagando (60gg)',staPagando(c.id)?'Sì':'No')}
+    ${it('Giorni firma→1° incasso',giorniFirmaIncasso(c.id)??'n/d')}
+  </div>`;
+  html+=`<div class="grid kpis" style="margin-top:12px">
+    <div class="card kpi"><div class="lbl">Venduto</div><div class="val sm">${money(vendutoCli(c.id))}</div></div>
+    <div class="card kpi"><div class="lbl">Erogato</div><div class="val sm">${money(erogatoCli(c.id))}</div></div>
+    <div class="card kpi"><div class="lbl">Fatturato</div><div class="val sm">${money(fatturatoCli(c.id))}</div></div>
+    <div class="card kpi"><div class="lbl">Incassato (LTV)</div><div class="val sm">${money(incassatoCli(c.id))}</div></div>
+    <div class="card kpi"><div class="lbl">Da incassare</div><div class="val sm">${money(residuoCli(c.id))}</div></div>
+  </div>`;
+  // tabella mensile 2025-2027
+  const id=c.id;
+  const vM=k=>sumMov(m=>m.clienteId===id&&m.tipo==='Venduto'&&mkey(m.data)===k);
+  const eM=k=>state.erogato.filter(e=>e.clienteId===id&&mkey(e.mese)===k).reduce((s,e)=>s+erogatoRiga(e),0);
+  const fM=k=>sumMov(m=>m.clienteId===id&&m.tipo==='Fatturato'&&mkey(m.data)===k);
+  const iM=k=>sumMov(m=>m.clienteId===id&&m.tipo==='Incassato'&&mkey(m.data)===k)-sumMov(m=>m.clienteId===id&&m.tipo==='Rimborso'&&mkey(m.data)===k);
+  const all=[];for(const y of[2025,2026,2027])for(let m=1;m<=12;m++)all.push(y+'-'+String(m).padStart(2,'0'));
+  const progAt=k=>{let s=0;for(const mm of all){if(mm>k)break;s+=eM(mm)-iM(mm);}return s;};
+  html+=`<h3>Dettaglio mensile 2025 · 2026 · 2027</h3><div class="tbl-wrap"><table><thead><tr>
+    <th>Mese</th><th>Venduto</th><th>Erogato</th><th>Fatturato</th><th>Incassato</th><th>Saldo (ero−inc)</th><th>Progressivo</th></tr></thead><tbody>`;
+  [2025,2026,2027].forEach(y=>{
+    let yv=0,ye=0,yf=0,yi=0;
+    for(let m=1;m<=12;m++){const k=y+'-'+String(m).padStart(2,'0');
+      const v=vM(k),e=eM(k),f=fM(k),ic=iM(k);yv+=v;ye+=e;yf+=f;yi+=ic;
+      if(v||e||f||ic)
+        html+=`<tr><td>${MONTHS[m-1]} ${y}</td><td>${money(v)}</td><td>${money(e)}</td><td>${money(f)}</td><td>${money(ic)}</td><td>${money(e-ic)}</td><td>${money(progAt(k))}</td></tr>`;
+    }
+    html+=`<tr class="sub"><td>Totale ${y}</td><td>${money(yv)}</td><td>${money(ye)}</td><td>${money(yf)}</td><td>${money(yi)}</td><td>${money(ye-yi)}</td><td>${money(progAt(y+'-12'))}</td></tr>`;
+  });
+  html+=`</tbody></table></div><p class="note">Mesi senza movimenti nascosti. I totali per anno considerano tutti i mesi.</p>`;
+  el.innerHTML=html;
+}
+
+/* ============================ IMPOSTAZIONI + GITHUB ============================ */
+function renderImpostazioni(){
+  const el=document.getElementById('view-impostazioni');const g=ghCfg();
+  const listEditor=(key,label)=>`<div class="card" style="margin-bottom:10px">
+    <label>${label}</label>
+    <textarea rows="4" onchange="setList('${key}',this.value)">${(state.liste[key]||[]).join('\\n')}</textarea>
+    <p class="hint">Una voce per riga.</p></div>`;
+  el.innerHTML=`<h2>Impostazioni</h2>
+
+  <h3>Sincronizzazione con GitHub</h3>
+  <div class="card">
+    <p class="hint">Collega una repository GitHub privata per avere gli stessi dati su tutti i dispositivi. Il token resta salvato solo in questo browser. Serve un token con permesso <b>Contents: Read and write</b> sulla repo.</p>
+    <div class="form-grid">
+      <div><label>Utente / organizzazione</label><input id="gh_user" value="${esc(g.user||'')}"></div>
+      <div><label>Repository</label><input id="gh_repo" value="${esc(g.repo||'')}"></div>
+      <div><label>Branch</label><input id="gh_branch" value="${esc(g.branch||'main')}"></div>
+      <div><label>File dati</label><input id="gh_path" value="${esc(g.path||'data.json')}"></div>
+      <div class="full"><label>Token di accesso</label><input id="gh_token" type="password" value="${esc(g.token||'')}"></div>
+    </div>
+    <div class="toolbar" style="margin-top:12px">
+      <button class="btn" onclick="ghSaveConnect()">Salva e connetti</button>
+      <button class="btn ghost" onclick="ghPull()">⬇︎ Carica da GitHub</button>
+      <button class="btn ghost" onclick="ghPush()">⬆︎ Salva su GitHub</button>
+      <button class="btn danger" onclick="ghDisconnect()">Disconnetti</button>
+    </div>
+    <p id="gh_status" class="hint"></p>
+  </div>
+
+  <h3>Backup manuale</h3>
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn ghost" onclick="exportBackup()">Esporta backup (.json)</button>
+      <label class="btn ghost" style="cursor:pointer">Importa backup (sostituisce)<input type="file" accept=".json" style="display:none" onchange="importBackup(this.files[0],true)"></label>
+      <label class="btn ghost" style="cursor:pointer">Aggiungi clienti da file (unisce)<input type="file" accept=".json" style="display:none" onchange="importBackup(this.files[0],false)"></label>
+      <button class="btn danger" onclick="resetToSeed()">Ripristina dati iniziali</button>
+    </div>
+    <p class="hint">"Importa backup" sostituisce tutto; "Aggiungi clienti da file" unisce senza cancellare.</p>
+  </div>
+
+  <h3>Elenchi personalizzabili</h3>
+  ${listEditor('venditori','Venditori')}
+  ${listEditor('consulenti','Consulenti')}
+  ${listEditor('dts','Direttori Tecnici')}
+  ${listEditor('percorsi','Percorsi / offerte')}
+  ${listEditor('stati','Stati cliente')}
+  <div class="card"><label>IVA (per il calcolo dell'erogato)</label>
+    <input type="number" step="1" value="${Math.round(IVA()*100)}" onchange="state.liste.iva=(+this.value||0)/100;save();renderAll()"> %</div>
+  `;
+}
+function setList(key,val){state.liste[key]=val.split('\\n').map(s=>s.trim()).filter(Boolean);save();renderAll();}
+
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='backup_incassi_rbr_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importBackup(file,replace){
+  if(!file)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(replace){if(!confirm('Sostituire TUTTI i dati con quelli del file?'))return;state=d;}
+    else{ // merge clienti per id, aggiunge movimenti/erogato
+      const ids=new Set(state.clienti.map(c=>c.id));
+      (d.clienti||[]).forEach(c=>{if(!ids.has(c.id))state.clienti.push(c);});
+      (d.movimenti||[]).forEach(m=>state.movimenti.push(m));
+      (d.erogato||[]).forEach(e=>state.erogato.push(e));
+    }
+    save();renderAll();alert('Import completato.');
+  }catch(e){alert('File non valido: '+e.message);}};
+  r.readAsText(file);
+}
+
+/* --- GitHub --- */
+function ghCfg(){try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch(e){return{};}}
+function ghSet(c){localStorage.setItem(GH_KEY,JSON.stringify(c));updateSyncBadge();}
+function ghStatus(t){const e=document.getElementById('gh_status');if(e)e.textContent=t;}
+function ghReadForm(){return{user:val('gh_user'),repo:val('gh_repo'),branch:val('gh_branch')||'main',
+  path:val('gh_path')||'data.json',token:val('gh_token')};}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+function ghApi(c){return `https://api.github.com/repos/${c.user}/${c.repo}/contents/${c.path}`;}
+function b64enc(s){return btoa(unescape(encodeURIComponent(s)));}
+function b64dec(s){return decodeURIComponent(escape(atob((s||'').replace(/\\n/g,''))));}
+
+async function ghSaveConnect(){const c=ghReadForm();if(!c.user||!c.repo||!c.token){ghStatus('Compila utente, repo e token.');return;}
+  ghSet({...c,connected:true});ghStatus('Connesso. Provo a caricare i dati dalla repo…');await ghPull(true);}
+function ghDisconnect(){ghSet({});ghStatus('Disconnesso.');}
+async function ghGetSha(c){try{const r=await fetch(ghApi(c)+'?ref='+c.branch,{headers:{Authorization:'token '+c.token,Accept:'application/vnd.github+json'}});
+  if(r.status===200){const j=await r.json();return j.sha;}return null;}catch(e){return null;}}
+async function ghPush(){const c={...ghCfg(),...(document.getElementById('gh_user')?ghReadForm():{})};
+  if(!c.user||!c.repo||!c.token){ghStatus('Configura prima GitHub.');return;}
+  ghStatus('Salvataggio su GitHub…');
+  try{const sha=await ghGetSha(c);
+    const body={message:'update dati RBR '+new Date().toISOString(),content:b64enc(JSON.stringify(state)),branch:c.branch};
+    if(sha)body.sha=sha;
+    const r=await fetch(ghApi(c),{method:'PUT',headers:{Authorization:'token '+c.token,Accept:'application/vnd.github+json'},body:JSON.stringify(body)});
+    if(r.ok){ghSet({...c,connected:true});ghStatus('Dati salvati su GitHub ✓');}
+    else{const j=await r.json();ghStatus('Errore GitHub: '+(j.message||r.status));}
+  }catch(e){ghStatus('Errore rete: '+e.message);}}
+async function ghPull(silent){const c={...ghCfg(),...(document.getElementById('gh_user')?ghReadForm():{})};
+  if(!c.user||!c.repo||!c.token){ghStatus('Configura prima GitHub.');return;}
+  ghStatus('Carico da GitHub…');
+  try{const r=await fetch(ghApi(c)+'?ref='+c.branch,{headers:{Authorization:'token '+c.token,Accept:'application/vnd.github+json'}});
+    if(r.status===200){const j=await r.json();const data=JSON.parse(b64dec(j.content));
+      state=data;save();ghSet({...c,connected:true});renderAll();ghStatus('Dati caricati da GitHub ✓');}
+    else if(r.status===404){ghStatus('Nessun file ancora sulla repo: uso i dati locali. Premi "Salva su GitHub" per crearlo.');ghSet({...c,connected:true});
+      if(!silent){await ghPush();}else{await ghPush();}}
+    else{const j=await r.json();ghStatus('Errore GitHub: '+(j.message||r.status));}
+  }catch(e){ghStatus('Errore rete: '+e.message);}}
+function updateSyncBadge(){const b=document.getElementById('syncBadge');const c=ghCfg();
+  if(c.connected&&c.repo){b.textContent='GitHub: '+c.repo;b.className='badge ok';}
+  else{b.textContent='Solo questo dispositivo';b.className='badge';}}
+
+/* ============================ INIT ============================ */
+buildNav();renderAll();go('dashboard');
+</script>
+</body>
+</html>
